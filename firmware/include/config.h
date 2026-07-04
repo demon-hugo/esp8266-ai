@@ -3,7 +3,7 @@
 // ---- Bridge polling ----
 #define BRIDGE_DEFAULT_PORT 8765
 #define BRIDGE_DEFAULT_PATH "/status"
-#define BRIDGE_POLL_INTERVAL_MS 15000
+#define BRIDGE_POLL_INTERVAL_MS 5000
 #define BRIDGE_HTTP_TIMEOUT_MS 3000
 
 // ---- WiFiManager ----

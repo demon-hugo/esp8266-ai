@@ -480,9 +480,11 @@ final class MirrorPopoverController: NSObject, NSPopoverDelegate {
 
     /// Quota lines & ring exactly as the firmware computes them from /status.
     private func applyScene(_ info: DeviceInfo) {
-        let enteringNet = info.mode == "net" && !mirror.netMode
-        mirror.netMode = info.mode == "net"
-        mirror.musicMode = info.mode == "music"
+        // mirror what's actually on the device screen (effective), so an
+        // AUTO device that auto-switched to music shows music here too
+        let enteringNet = info.effective == "net" && !mirror.netMode
+        mirror.netMode = info.effective == "net"
+        mirror.musicMode = info.effective == "music"
         if mirror.netMode {
             if enteringNet { mirror.resetNetSweep() } // fresh sweep, like the device's chrome reset
             mirror.needsDisplay = true

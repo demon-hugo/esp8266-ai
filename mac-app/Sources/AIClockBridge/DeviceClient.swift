@@ -8,7 +8,8 @@ struct DeviceInfo {
     var ip = ""
     var ssid = ""
     var bridge = ""
-    var mode = "auto"       // auto | claude | codex | net | music
+    var mode = "auto"       // configured: auto | claude | codex | net | music
+    var effective = "auto"  // what's actually on screen (AUTO may promote to music)
     var showing = ""
     var spriteRev = 0       // bumped by the device on animation change
     var claudeCustomSprite = false
@@ -57,6 +58,7 @@ final class DeviceClient {
                 info.ssid = obj["ssid"] as? String ?? ""
                 info.bridge = obj["bridge"] as? String ?? ""
                 info.mode = obj["mode"] as? String ?? "auto"
+                info.effective = obj["effective"] as? String ?? info.mode
                 info.showing = obj["showing"] as? String ?? ""
                 info.spriteRev = (obj["sprite_rev"] as? NSNumber)?.intValue ?? 0
                 let claude = obj["claude"] as? [String: Any]

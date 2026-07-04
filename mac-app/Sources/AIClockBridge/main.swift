@@ -41,6 +41,7 @@ let netMonitor = NetSpeedMonitor()
 netMonitor.start()
 let nowPlaying = NowPlayingMonitor()
 nowPlaying.start()
+service.musicPlayingProvider = { nowPlaying.snapshot.playing }
 
 let server = HTTPServer(port: port, routes: [
     "/": { service.snapshot().jsonData() },

@@ -217,7 +217,15 @@ Mac 端常驻进程由 LaunchAgent（`~/Library/LaunchAgents/local.AIClockBridge
 资源包同步进这个 .app**（`cp .build/debug/AIClockBridge .build/AIClockBridge.app/Contents/MacOS/`），
 否则 LaunchAgent 会不断复活旧版本、和手动启动的新版本抢 8765 端口轮流应答。
 
-## 6. 音乐播放页（Mac + 设备同步显示）
+## 6. 音乐播放页（Mac + 设备同步显示，自动切换）
+
+**AUTO 模式下自动切换**：Mac 一有音频在播放（放歌、看视频都算），设备自动切到音乐
+页；停止后自动切回桌宠/额度页。机制：`/status` 带 `music_playing` 字段（状态轮询
+5 秒一次 → 开始播放约 5 秒内切入），音乐页显示时靠 `/music` 的 2 秒轮询快速检测停止
+（约 2 秒切回）。仅 AUTO 生效；手动固定某模式（含固定「音乐播放」）时不受影响。
+`/api/info` 里 `mode` 是配置的模式、`effective` 是当前实际渲染的模式，Mac 镜像按
+`effective` 跟随。
+
 
 显示模式切到「音乐播放」（弹窗底部分段控件 / 右键菜单 / `POST /api/display mode=music`）
 后，Mac app 通过系统 Now Playing 信息读取当前播放的歌曲、歌手、播放进度和专辑封面，

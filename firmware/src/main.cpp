@@ -76,6 +76,12 @@ unsigned long lastSwitchMs = 0;
 enum DisplayMode { MODE_AUTO, MODE_CLAUDE, MODE_CODEX, MODE_NET, MODE_MUSIC };
 DisplayMode displayMode = MODE_AUTO;
 
+// When AUTO and the Mac reports audio playing, the screen auto-switches to the
+// music page and back when it stops — same spirit as the Claude/Codex auto
+// switch. Only AUTO does this; a pinned mode is always honored as-is.
+bool statusMusicPlaying = false;
+DisplayMode lastEffectiveMode = MODE_AUTO;
+
 // ---------- net speed mode state ----------
 // Rendering is decoupled from the network: pollNet() fetches every 2s and
 // only refills a queue of 250ms samples (the bridge samples at 4Hz and tags
@@ -765,6 +771,7 @@ void pollMusic() {
       musicArtist = doc["artist"] | "";
       musicAlbum = doc["album"] | "";
       musicPlaying = doc["playing"] | false;
+      statusMusicPlaying = musicPlaying; // fast stop-detection while music shows
       musicElapsed = doc["elapsed"] | 0;
       musicDuration = doc["duration"] | 0;
       musicHasArtwork = doc["has_artwork"] | false;
@@ -843,7 +850,14 @@ bool parseStatusJson(const String &payload) {
     codexStatus.weeklyPct = x["weekly_pct"] | -1.0;
     codexStatus.weeklyResetMin = x["weekly_reset_min"] | -1;
   }
+  statusMusicPlaying = doc["music_playing"] | false;
   return true;
+}
+
+// The mode actually rendered: AUTO promotes to music while audio is playing.
+DisplayMode effectiveMode() {
+  if (displayMode == MODE_AUTO && statusMusicPlaying) return MODE_MUSIC;
+  return displayMode;
 }
 
 void pollBridge() {
@@ -879,7 +893,8 @@ void pollBridge() {
     codexStatus.status = "offline";
   }
   http.end();
-  if (displayMode != MODE_NET && displayMode != MODE_MUSIC) {
+  DisplayMode eff = effectiveMode();
+  if (eff != MODE_NET && eff != MODE_MUSIC) {
     updateActiveApp();
     drawActiveApp();
   }
@@ -979,7 +994,9 @@ void handleApiInfo() {
   doc["ip"] = WiFi.localIP().toString();
   doc["ssid"] = WiFi.SSID();
   doc["bridge"] = bridgeHost;
-  doc["mode"] = displayModeName(displayMode);
+  doc["mode"] = displayModeName(displayMode);           // configured mode
+  doc["effective"] = displayModeName(effectiveMode());   // what's on screen now
+  doc["music_playing"] = statusMusicPlaying;
   doc["showing"] = (currentApp == APP_CLAUDE) ? "claude" : "codex";
   doc["last_update_s"] = everPolled ? (long)((millis() - lastSuccessMs) / 1000) : -1;
   doc["sprite_rev"] = spriteRev;
@@ -1366,7 +1383,25 @@ void loop() {
   webServer.handleClient();
   unsigned long nowMs = millis();
 
-  if (displayMode == MODE_NET) {
+  // Effective mode may differ from the configured one (AUTO -> music while
+  // audio plays). On a transition, reset the incoming mode's chrome so it
+  // repaints cleanly, and repaint the pet immediately when returning to it.
+  DisplayMode eff = effectiveMode();
+  if (eff != lastEffectiveMode) {
+    lastEffectiveMode = eff;
+    if (eff == MODE_NET) {
+      netChromeDrawn = false;
+      lastNetPollMs = 0;
+    } else if (eff == MODE_MUSIC) {
+      musicChromeDrawn = false;
+      lastMusicPollMs = 0;
+    } else {
+      updateActiveApp();
+      drawActiveApp();
+    }
+  }
+
+  if (eff == MODE_NET) {
     // net-speed mode: rendering (constant-rate sweep) is independent of the
     // bridge polls that refill its sample queue
     if (nowMs - lastNetDrawMs >= NET_DRAW_INTERVAL_MS) {
@@ -1377,7 +1412,7 @@ void loop() {
       lastNetPollMs = nowMs;
       pollNet();
     }
-  } else if (displayMode == MODE_MUSIC) {
+  } else if (eff == MODE_MUSIC) {
     // music now-playing mode: cover art + track metadata from the bridge
     if (nowMs - lastMusicPollMs >= MUSIC_POLL_INTERVAL_MS) {
       lastMusicPollMs = nowMs;
