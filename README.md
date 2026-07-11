@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://mac.qust.me/images/logo.svg" width="72" alt="logo">
+  <img src="docs/images/logo.svg" width="72" alt="logo">
 </p>
 
 <h1 align="center">AI Mac 小屏幕</h1>
@@ -13,7 +13,7 @@
 </p>
 
 <p align="center">
-  <img src="https://mac.qust.me/images/hero.jpg" width="640" alt="AI Mac 小屏幕">
+  <img src="docs/images/hero.jpg" width="640" alt="AI Mac 小屏幕">
 </p>
 
 一块 240×240 的复古小电视，放在桌上实时显示 **Claude Code / Codex CLI 在干什么、额度还剩多少**。不需要任何 API key：数据来自本机已有的 CLI 登录凭据和会话日志，由配套的 Mac / Windows 桥接程序在局域网内提供给设备。
@@ -22,10 +22,10 @@
 
 | | |
 |---|---|
-| <img src="https://mac.qust.me/images/feature1.jpg" width="360" alt="AI 工作状态"> | **AI 工作状态与额度**<br>桌宠动起来 = AI 正在干活。方形进度环 + 大字显示 5 小时 / 周额度的真实用量；额度用满自动换成重置倒计时，等你审批时整圈边框红闪提醒。 |
-| <img src="https://mac.qust.me/images/feature2.jpg" width="360" alt="网速监视"> | **网速实时监视**<br>任务管理器风格的上下行曲线，56 秒滚动窗口，量程自动调整。 |
-| <img src="https://mac.qust.me/images/music.jpg" width="360" alt="音乐播放"> | **音乐播放显示**<br>专辑封面、歌名、歌手、进度条实时同步；音乐响起自动切入，停止自动切回。 |
-| <img src="https://mac.qust.me/images/feature3.jpg" width="360" alt="桌宠可换"> | **可换桌宠**<br>内置 [petdex.dev](https://petdex.dev) 画廊 3300+ 开源桌宠，也可上传任意 GIF，设备板上直接解码，无需重烧固件。 |
+| <img src="docs/images/feature1.jpg" width="360" alt="AI 工作状态"> | **AI 工作状态与额度**<br>桌宠动起来 = AI 正在干活。方形进度环 + 大字显示 5 小时 / 周额度的真实用量；额度用满自动换成重置倒计时，等你审批时整圈边框红闪提醒。 |
+| <img src="docs/images/feature2.jpg" width="360" alt="网速监视"> | **网速实时监视**<br>任务管理器风格的上下行曲线，56 秒滚动窗口，量程自动调整。 |
+| <img src="docs/images/music.jpg" width="360" alt="音乐播放"> | **音乐播放显示**<br>专辑封面、歌名、歌手、进度条实时同步；音乐响起自动切入，停止自动切回。 |
+| <img src="docs/images/feature3.jpg" width="360" alt="桌宠可换"> | **可换桌宠**<br>内置 [petdex.dev](https://petdex.dev) 画廊 3300+ 开源桌宠，也可上传任意 GIF，设备板上直接解码，无需重烧固件。 |
 
 ## 快速上手
 
@@ -53,7 +53,7 @@
 桥接程序常驻菜单栏 / 托盘，会**自动发现并配对**同一局域网内的设备——到这里屏幕就活了。
 
 <p align="center">
-  <img src="https://mac.qust.me/images/working.jpg" width="640" alt="工作演示">
+  <img src="docs/images/working.jpg" width="640" alt="工作演示">
 </p>
 
 日常使用都在托盘图标上：**左键**打开设备画面的实时镜像，**右键**是完整菜单（额度详情、屏幕切换、更换桌宠、音乐/网速页等）。
