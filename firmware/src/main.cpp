@@ -1759,6 +1759,7 @@ void setup() {
   loadCustomSpriteState();
 
   tft.init();
+  tft.invertDisplay(1);
   tft.setRotation(0);
   tft.fillScreen(TFT_BLACK);
   analogWriteFreq(BRIGHTNESS_PWM_FREQ);
