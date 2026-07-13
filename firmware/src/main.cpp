@@ -170,15 +170,15 @@ bool mainUiShown = false;      // false while the config-portal screen is up
 bool webServerStarted = false; // deferred: port 80 clashes with the portal
 
 // ---------- backlight brightness ----------
-// The panel backlight (TFT_BL, active LOW) is PWM-dimmable — the vendor's own
-// firmware does the same. 0 = off, 100 = full. Persisted so it survives reboot.
+// The panel backlight (TFT_BL, active HIGH) is PWM-dimmable. 0 = off, 100 =
+// full. Persisted so it survives reboot.
 
 int brightness = BRIGHTNESS_DEFAULT; // 0-100
 
 void applyBrightness() {
-  // analogWriteRange(100) is set in setup(), so the duty value is just the
-  // inverted percentage (active LOW: 0 duty = always LOW = full on).
-  analogWrite(TFT_BL, 100 - brightness);
+  // analogWriteRange(100) is set in setup(), so the duty is the brightness
+  // percentage directly (active HIGH).
+  analogWrite(TFT_BL, brightness);
 }
 
 void loadBrightness() {
