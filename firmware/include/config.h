@@ -13,6 +13,14 @@
 #define WIFI_PORTAL_AP_NAME "AI-Clock-Setup"
 #define WIFI_CONFIG_FILE "/bridge_host.txt"
 
+// ---- Static WiFi network (Panabit DHCP diagnostic) ----
+// Keep this enabled only while diagnosing the DHCP lease issue on Demon-ESP.
+#define WIFI_STATIC_IP_ENABLED 1
+#define WIFI_STATIC_IP_ADDR 192, 168, 1, 75
+#define WIFI_STATIC_GATEWAY 192, 168, 1, 1
+#define WIFI_STATIC_SUBNET 255, 255, 255, 0
+#define WIFI_STATIC_DNS 192, 168, 1, 20
+
 // ---- Backlight ----
 #define BRIGHTNESS_FILE "/brightness.txt"
 #define BRIGHTNESS_DEFAULT 100

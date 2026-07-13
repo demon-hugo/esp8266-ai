@@ -1071,6 +1071,16 @@ void setupWiFi() {
   wifiManager.setAPCallback(configModeCallback);
   wifiManager.setConfigPortalBlocking(false);
 
+#if WIFI_STATIC_IP_ENABLED
+  const IPAddress staticIp(WIFI_STATIC_IP_ADDR);
+  const IPAddress staticGateway(WIFI_STATIC_GATEWAY);
+  const IPAddress staticSubnet(WIFI_STATIC_SUBNET);
+  const IPAddress staticDns(WIFI_STATIC_DNS);
+  if (!WiFi.config(staticIp, staticGateway, staticSubnet, staticDns)) {
+    Serial.println("[wifi] failed to apply static IP configuration");
+  }
+#endif
+
   tft.fillScreen(TFT_BLACK);
   tft.setTextDatum(TL_DATUM);
   tft.setTextColor(TFT_WHITE, TFT_BLACK);
