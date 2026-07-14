@@ -653,9 +653,19 @@ sealed class MirrorForm : Form
         }
         else
         {
-            _mirror.RingPct = snap.Codex.PrimaryPct ?? 0;
-            _mirror.Line1 = "5h " + PctText(snap.Codex.PrimaryPct);
-            _mirror.Line2 = "Weekly " + PctText(snap.Codex.WeeklyPct);
+            // Codex may only have a weekly window now (5h limit dropped):
+            // ring + single line follow whatever windows actually exist.
+            _mirror.RingPct = snap.Codex.PrimaryPct ?? snap.Codex.WeeklyPct ?? 0;
+            if (!snap.Codex.PrimaryPct.HasValue && snap.Codex.WeeklyPct.HasValue)
+            {
+                _mirror.Line1 = "Weekly " + PctText(snap.Codex.WeeklyPct);
+                _mirror.Line2 = "";
+            }
+            else
+            {
+                _mirror.Line1 = "5h " + PctText(snap.Codex.PrimaryPct);
+                _mirror.Line2 = "Weekly " + PctText(snap.Codex.WeeklyPct);
+            }
             _mirror.NeedsInput = snap.Codex.NeedsInput;
         }
         _mirror.Invalidate();

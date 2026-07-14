@@ -8,7 +8,8 @@ namespace AIClockBridge;
 //   Claude: %USERPROFILE%\.claude\.credentials.json, then GET
 //           https://api.anthropic.com/api/oauth/usage  (5h + 7d windows)
 //   Codex:  %USERPROFILE%\.codex\auth.json, then GET
-//           https://chatgpt.com/backend-api/wham/usage (5h + weekly windows)
+//           https://chatgpt.com/backend-api/wham/usage (weekly window; older
+//           accounts also had a 5h one - see the classification in FetchCodex)
 // Tokens never leave this machine except toward their own vendor's API.
 
 class ProviderUsage
@@ -125,9 +126,9 @@ sealed class UsageFetcher
             code = (int)resp.StatusCode;
             body = await resp.Content.ReadAsStringAsync();
         }
-        catch
+        catch (Exception ex)
         {
-            usage.Error = "Claude 用量请求失败";
+            usage.Error = $"Claude 用量请求失败：{ex.Message}";
             return usage;
         }
         if (code != 200)
@@ -213,9 +214,9 @@ sealed class UsageFetcher
             code = (int)resp.StatusCode;
             body = await resp.Content.ReadAsStringAsync();
         }
-        catch
+        catch (Exception ex)
         {
-            usage.Error = "Codex 用量请求失败";
+            usage.Error = $"Codex 用量请求失败：{ex.Message}";
             return usage;
         }
         if (code < 200 || code > 299)
@@ -232,18 +233,33 @@ sealed class UsageFetcher
                 usage.Error = "Codex 用量响应解析失败";
                 return usage;
             }
+            // Codex dropped the 5h window (2026-07): primary_window now carries
+            // the weekly (604800s) limit and secondary_window is null. Classify
+            // each window by its advertised length instead of trusting the slot.
             var now = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() / 1000.0;
-            if (rateLimit.TryGetProperty("primary_window", out var w1))
+            foreach (var (slot, fallbackSec) in new[]
+                     { ("primary_window", 5.0 * 3600), ("secondary_window", 7.0 * 86400) })
             {
-                usage.PrimaryPct = NumberOrNull(w1, "used_percent");
-                var reset = NumberOrNull(w1, "reset_at");
-                if (reset.HasValue) usage.PrimaryResetMin = Math.Max(0, (int)((reset.Value - now) / 60));
-            }
-            if (rateLimit.TryGetProperty("secondary_window", out var w2))
-            {
-                usage.WeeklyPct = NumberOrNull(w2, "used_percent");
-                var reset = NumberOrNull(w2, "reset_at");
-                if (reset.HasValue) usage.WeeklyResetMin = Math.Max(0, (int)((reset.Value - now) / 60));
+                if (!rateLimit.TryGetProperty(slot, out var w)
+                    || w.ValueKind != JsonValueKind.Object) continue;
+                var pct = NumberOrNull(w, "used_percent");
+                int? resetMin = null;
+                var reset = NumberOrNull(w, "reset_at");
+                if (reset.HasValue) resetMin = Math.Max(0, (int)((reset.Value - now) / 60));
+                var windowSec = NumberOrNull(w, "limit_window_seconds") ?? fallbackSec;
+                if (windowSec >= 2 * 86400)
+                {
+                    if (!usage.WeeklyPct.HasValue)
+                    {
+                        usage.WeeklyPct = pct;
+                        usage.WeeklyResetMin = resetMin;
+                    }
+                }
+                else if (!usage.PrimaryPct.HasValue)
+                {
+                    usage.PrimaryPct = pct;
+                    usage.PrimaryResetMin = resetMin;
+                }
             }
             usage.FetchedAt = DateTime.UtcNow;
         }

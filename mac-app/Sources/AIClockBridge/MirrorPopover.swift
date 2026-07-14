@@ -661,9 +661,16 @@ final class MirrorPopoverController: NSObject, NSPopoverDelegate {
             mirror.line2 = "Weekly " + Self.pctText(snap.claude.sevenDayPct)
             mirror.needsInput = snap.claude.needsInput
         } else {
-            mirror.ringPct = snap.codex.primaryPct ?? 0
-            mirror.line1 = "5h " + Self.pctText(snap.codex.primaryPct)
-            mirror.line2 = "Weekly " + Self.pctText(snap.codex.weeklyPct)
+            // Codex may only have a weekly window now (5h limit dropped):
+            // ring + single line follow whatever windows actually exist.
+            mirror.ringPct = snap.codex.primaryPct ?? snap.codex.weeklyPct ?? 0
+            if snap.codex.primaryPct == nil, snap.codex.weeklyPct != nil {
+                mirror.line1 = "Weekly " + Self.pctText(snap.codex.weeklyPct)
+                mirror.line2 = ""
+            } else {
+                mirror.line1 = "5h " + Self.pctText(snap.codex.primaryPct)
+                mirror.line2 = "Weekly " + Self.pctText(snap.codex.weeklyPct)
+            }
             mirror.needsInput = snap.codex.needsInput
         }
         mirror.needsDisplay = true

@@ -439,7 +439,27 @@ void drawBoldString(const String &s, int x, int y, int font, uint16_t color) {
 }
 
 void drawQuotaText(float hourPct, float weekPct, bool force) {
+  // Codex dropped the 5h window (2026-07): the bridge then sends
+  // primary_pct=null, so collapse to a single centered "Wk" column.
+  bool single = hourPct < 0 && weekPct >= 0;
+  static int8_t lastSingle = -1;
+  if ((int8_t)single != lastSingle) {
+    lastSingle = (int8_t)single;
+    force = true;
+    tft.fillRect(0, QUOTA_LABEL_Y, 240, QUOTA_VALUE_Y + 26 - QUOTA_LABEL_Y, TFT_BLACK);
+  }
   tft.setTextDatum(TC_DATUM);
+  if (single) {
+    if (force) drawBoldString("Wk", 120, QUOTA_LABEL_Y, 2, TFT_LIGHTGREY);
+    String v = pctText(weekPct);
+    if (force || v != lastQuotaWk) {
+      lastQuotaWk = v;
+      lastQuota5h = "";
+      tft.fillRect(120 - 50, QUOTA_VALUE_Y, 100, 26, TFT_BLACK);
+      drawBoldString(v, 120, QUOTA_VALUE_Y, 4, TFT_WHITE);
+    }
+    return;
+  }
   if (force) {
     drawBoldString("5h", QUOTA_COL1_X, QUOTA_LABEL_Y, 2, TFT_LIGHTGREY);
     drawBoldString("Wk", QUOTA_COL2_X, QUOTA_LABEL_Y, 2, TFT_LIGHTGREY);
@@ -557,6 +577,13 @@ void drawAppLogo() {
   }
 }
 
+// Codex's ring percentage: the 5h window when it exists, otherwise the
+// weekly one (Codex removed the 5h limit in 2026-07).
+float codexRingPct() {
+  if (codexStatus.primaryPct >= 0) return codexStatus.primaryPct;
+  return max(codexStatus.weeklyPct, 0.0f);
+}
+
 // Claude's ring percentage: real 5h OAuth quota from the bridge when known,
 // otherwise fall back to elapsed session time as a rough stand-in.
 float claudeRingPct() {
@@ -581,7 +608,7 @@ void drawActiveApp() {
     if (showingCd == CD_NONE) drawClaudeSprite(claudeFrame);
     drawQuotaText(claudeRingPct(), claudeStatus.sevenDayPct, true);
   } else {
-    drawSquareRing(max(codexStatus.primaryPct, 0.0f), currentStatusColor());
+    drawSquareRing(codexRingPct(), currentStatusColor());
     if (showingCd == CD_NONE) drawCodexSprite(codexFrame);
     drawQuotaText(codexStatus.primaryPct, codexStatus.weeklyPct, true);
   }
@@ -600,7 +627,7 @@ void refreshActiveApp() {
     drawSquareRing(claudeRingPct(), currentStatusColor());
     drawQuotaText(claudeRingPct(), claudeStatus.sevenDayPct, false);
   } else {
-    drawSquareRing(max(codexStatus.primaryPct, 0.0f), currentStatusColor());
+    drawSquareRing(codexRingPct(), currentStatusColor());
     drawQuotaText(codexStatus.primaryPct, codexStatus.weeklyPct, false);
   }
   if (showingCd != CD_NONE) {
@@ -615,7 +642,7 @@ void redrawRingOnly() {
   if (currentApp == APP_CLAUDE) {
     drawSquareRing(claudeRingPct(), currentStatusColor());
   } else {
-    drawSquareRing(max(codexStatus.primaryPct, 0.0f), currentStatusColor());
+    drawSquareRing(codexRingPct(), currentStatusColor());
   }
 }
 
@@ -1493,8 +1520,10 @@ void handleRoot() {
   html += "<tr><td>Claude</td><td>" + htmlEscape(claudeStatus.status) + ", " +
           formatTokens(claudeStatus.tokensToday) + " tok</td></tr>";
   html += "<tr><td>Codex</td><td>" + htmlEscape(codexStatus.status) + ", " +
-          formatTokens(codexStatus.tokensToday) + " tok, 5h " +
-          (codexStatus.primaryPct >= 0 ? String(codexStatus.primaryPct, 0) + "%" : "?") + "</td></tr>";
+          formatTokens(codexStatus.tokensToday) + " tok, " +
+          (codexStatus.primaryPct >= 0 ? "5h " + String(codexStatus.primaryPct, 0) + "%"
+           : codexStatus.weeklyPct >= 0 ? "Wk " + String(codexStatus.weeklyPct, 0) + "%"
+                                        : "5h ?") + "</td></tr>";
   html += "</table>";
 
   html += "<form method='POST' action='/reset-wifi' onsubmit=\"return confirm('清除 WiFi "

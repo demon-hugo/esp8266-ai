@@ -495,20 +495,33 @@ sealed class StatusService
         s.Status = StatusFromDelta(lastMtime > 0 ? now - lastMtime : 1e9);
         if (latestRateLimits.HasValue)
         {
+            // Same window-length classification as UsageFetcher.FetchCodex:
+            // since Codex dropped the 5h limit (2026-07) its session logs put
+            // the weekly window in the "primary" slot, so sort by length.
             var rl = latestRateLimits.Value;
-            if (TryProp(rl, "primary", out var primary))
+            foreach (var (slot, fallbackMin) in new[] { ("primary", 300), ("secondary", 7 * 1440) })
             {
-                s.PrimaryPct = DoubleVal(primary, "used_percent");
-                s.PrimaryWindowMin = (int?)DoubleVal(primary, "window_minutes");
-                var reset = DoubleVal(primary, "resets_at");
-                if (reset.HasValue) s.PrimaryResetMin = Math.Max(0, (int)((reset.Value - now) / 60));
-            }
-            if (TryProp(rl, "secondary", out var secondary))
-            {
-                s.WeeklyPct = DoubleVal(secondary, "used_percent");
-                s.WeeklyWindowMin = (int?)DoubleVal(secondary, "window_minutes");
-                var reset = DoubleVal(secondary, "resets_at");
-                if (reset.HasValue) s.WeeklyResetMin = Math.Max(0, (int)((reset.Value - now) / 60));
+                if (!TryProp(rl, slot, out var w)) continue;
+                var pct = DoubleVal(w, "used_percent");
+                var winMin = (int?)DoubleVal(w, "window_minutes");
+                int? resetMin = null;
+                var reset = DoubleVal(w, "resets_at");
+                if (reset.HasValue) resetMin = Math.Max(0, (int)((reset.Value - now) / 60));
+                if ((winMin ?? fallbackMin) >= 2 * 1440)
+                {
+                    if (!s.WeeklyPct.HasValue)
+                    {
+                        s.WeeklyPct = pct;
+                        s.WeeklyWindowMin = winMin;
+                        s.WeeklyResetMin = resetMin;
+                    }
+                }
+                else if (!s.PrimaryPct.HasValue)
+                {
+                    s.PrimaryPct = pct;
+                    s.PrimaryWindowMin = winMin;
+                    s.PrimaryResetMin = resetMin;
+                }
             }
         }
         latestRateLimitsDoc?.Dispose();
